@@ -1,44 +1,126 @@
 var UI = require('ui');
 var ajax = require('ajax');
-
-
 var Settings = require('settings');
 
-Settings.config(
-  { url: 'http://www.seanisfat.info/pebbleHabitRPG.html' },
-  function(e) {
-    console.log('closed configurable');
 
-    // Show the parsed response
-    console.log(JSON.stringify(e.options));
+console.log('Object: ' + Settings);
 
-    // Show the raw response if parsing failed
-    if (e.failed) {
-      console.log(e.response);
-    }
+console.log('Stringified: ' + JSON.stringify(Settings));
+
+console.log('UUID2: ' + Settings.uuid2);
+
+var scard = new UI.Card({
+      title:'HabitRPG',
+      subtitle:'starting...',
+      scrollable: true
+    });
+scard.show();
+
+
+
+function appMessageAck(e) {
+	console.log("App message sent successfully");
+  
+  console.log(JSON.stringify(localStorage.getItem("settings")));
+  
+}
+
+
+// app message failed to send
+//
+function appMessageNack(e) {
+	console.log("App message failed to send: " + e.error.message);
+}
+
+
+// app ready event
+//
+Pebble.addEventListener("ready",
+	function(e) {
+		console.log("connect! [" + e.ready + "] (" + e.type + ")");
+	}
+);
+
+
+// display configuration screen
+//
+Pebble.addEventListener("showConfiguration",
+	function() {
+    var config = "http://www.seanisfat.info/pebbleHabitRPG.html";
+		var settings = encodeURIComponent(localStorage.getItem("settings"));
+    scard.subtitle('Changing Settings');
+    console.log("Opening Config: " + config);
+		Pebble.openURL(config);
+
+	}
+);
+
+
+// close configuration screen
+//
+Pebble.addEventListener("webviewclosed",
+	function(e) {
+		var settings;
+    scard.subtitle('Saving Settings');
+		try {
+			settings = JSON.parse(decodeURIComponent(e.response));
+			localStorage.clear();
+			localStorage.setItem("settings", JSON.stringify(settings));
+			console.log("Settings: " + localStorage.getItem("settings"));
+			Pebble.sendAppMessage(settings, appMessageAck, appMessageNack);
+		} catch(err) {
+			settings = false;
+			console.log("No JSON response or received Cancel event");
+		}
+	}
+);
+
+
+
+
+
+
+var URL = 'https://habitrpg.com/api/v2/members/' + Settings.uuid2;
+
+
+
+ var icard = new UI.Card({
+      title:'HabitRPG',
+      subtitle:'',
+      scrollable: true
+    });
+
+
+console.log('||||||#########################||||||||||||||UUID2|' + Settings.uuid2 + '|' + Settings.key2  );
+ajax(
+  {
+    url: URL,
+    type: 'json',
+    method: 'GET',
+            headers:{
+        'x-api-user': Settings.uuid2,  
+        'x-api-key': Settings.key2,  
+        }
+  },
+  function(data2) {
+  icard.subtitle('Getting Latest data for ' + data2.profile.name + '...');
+   
+
+  icard.show();
+
+  },
+  function(error2) {
+    // Failure!
+    console.log('Failed fetching habit data: ' + error2);
   }
 );
 
 
-var options = Settings.option();
-console.log(JSON.stringify(options));
 
 
-// Create a Card with title and subtitle
-var card = new UI.Card({
-  title:'HabitRPG',
-  subtitle:'Getting Latest...',
-  scrollable: true
-});
 
-// Display the Card
-card.show();
+URL = 'https://habitrpg.com/api/v2/user/tasks';
 
-// Construct URL
-//var cityName = 'London';
-
-//var URL = cityName;
-var URL = 'https://habitrpg.com/api/v2/user/tasks';
 
 // Make the request
 ajax(
@@ -47,13 +129,13 @@ ajax(
     type: 'json',
     method: 'GET',
             headers:{
-        'x-api-user': options.uuid,  
-        'x-api-key': options.key,  
+        'x-api-user': Settings.uuid2,  
+        'x-api-key': Settings.key2,  
         }
   },
   function(data) {
             // Success!
-            console.log("Successfully fetched HABIT data!");
+    console.log('Successfully fetched HABIT data!');
           
             var habits = [];
            // var daily = '';
@@ -134,7 +216,7 @@ ajax(
         });    
         
         topMenu.show();
-        card.hide();       
+         icard.hide();
         
             
         topMenu.on('select', function(e) {
@@ -162,8 +244,8 @@ ajax(
                 type: 'json',
                 method: 'POST',
                         headers:{
-        'x-api-user': options.uuid,  
-        'x-api-key': options.key,  
+                          'x-api-user': Settings.uuid2,  
+                          'x-api-key': Settings.key2,  
                     }
               },
               function(data) {
@@ -190,8 +272,8 @@ ajax(
                 type: 'json',
                 method: 'POST',
                         headers:{
-        'x-api-user': options.uuid,  
-        'x-api-key': options.key,  
+        'x-api-user': options.uuid2,  
+        'x-api-key': options.key2,  
                     }
               },
               function(data) {
@@ -218,3 +300,5 @@ ajax(
     console.log('Failed fetching habit data: ' + error);
   }
 );
+  
+
