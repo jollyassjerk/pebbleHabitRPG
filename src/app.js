@@ -1,13 +1,12 @@
 var UI = require('ui');
 var ajax = require('ajax');
 var Settings = require('settings');
-
-
-console.log('Object: ' + Settings);
+var habit = [];
+var stat = [];
 
 console.log('Stringified: ' + JSON.stringify(Settings));
+console.log('Stringified: ' + Settings.option('uuid'));
 
-console.log('UUID2: ' + Settings.uuid2);
 
 var scard = new UI.Card({
       title:'HabitRPG',
@@ -21,7 +20,8 @@ scard.show();
 function appMessageAck(e) {
 	console.log("App message sent successfully");
   
-  console.log(JSON.stringify(localStorage.getItem("settings")));
+  console.log('Stringified: ' + JSON.stringify(Settings));
+  console.log('item ' + Settings.option('uuid'));
   
 }
 
@@ -47,7 +47,7 @@ Pebble.addEventListener("ready",
 Pebble.addEventListener("showConfiguration",
 	function() {
     var config = "http://www.seanisfat.info/pebbleHabitRPG.html";
-		var settings = encodeURIComponent(localStorage.getItem("settings"));
+		//var settings = encodeURIComponent(localStorage.getItem("settings"));
     scard.subtitle('Changing Settings');
     console.log("Opening Config: " + config);
 		Pebble.openURL(config);
@@ -64,13 +64,22 @@ Pebble.addEventListener("webviewclosed",
     scard.subtitle('Saving Settings');
 		try {
 			settings = JSON.parse(decodeURIComponent(e.response));
+
 			localStorage.clear();
 			localStorage.setItem("settings", JSON.stringify(settings));
 			console.log("Settings: " + localStorage.getItem("settings"));
-			Pebble.sendAppMessage(settings, appMessageAck, appMessageNack);
+			Settings.option('uuid', settings.uuid2);
+
+      
+      Settings.option('key', settings.key2);
+
+
+      Pebble.sendAppMessage(JSON.parse(decodeURIComponent(e.response)), appMessageAck, appMessageNack);
 		} catch(err) {
+      console.log(err);
 			settings = false;
 			console.log("No JSON response or received Cancel event");
+      
 		}
 	}
 );
@@ -78,9 +87,10 @@ Pebble.addEventListener("webviewclosed",
 
 
 
+ console.log('item ' + Settings.options);
 
-
-var URL = 'https://habitrpg.com/api/v2/members/' + Settings.uuid2;
+//var URL = 'https://habitrpg.com/api/v2/members/' + Settings.option('uuid');
+var URL = 'https://habitrpg.com/api/v2/user';
 
 
 
@@ -91,26 +101,28 @@ var URL = 'https://habitrpg.com/api/v2/members/' + Settings.uuid2;
     });
 
 
-console.log('||||||#########################||||||||||||||UUID2|' + Settings.uuid2 + '|' + Settings.key2  );
+//console.log('||||||#########################||||||||||||||UUID|' + Settings.uuid + '|' + Settings.key  );
 ajax(
   {
     url: URL,
     type: 'json',
     method: 'GET',
             headers:{
-        'x-api-user': Settings.uuid2,  
-        'x-api-key': Settings.key2,  
+        'x-api-user': Settings.option('uuid'),  
+        'x-api-key': Settings.option('key'),  
         }
   },
   function(data2) {
   icard.subtitle('Getting Latest data for ' + data2.profile.name + '...');
    
-
+    habit = data2;
+    stat = habit.stats;
   icard.show();
-
+  scard.hide();
   },
   function(error2) {
     // Failure!
+  scard.subtitle('Something was not right, likely UUID or Key')  ;
     console.log('Failed fetching habit data: ' + error2);
   }
 );
@@ -119,7 +131,7 @@ ajax(
 
 
 
-URL = 'https://habitrpg.com/api/v2/user/tasks';
+URL = 'https://habitrpg.com/api/v2/user/';
 
 
 // Make the request
@@ -129,85 +141,131 @@ ajax(
     type: 'json',
     method: 'GET',
             headers:{
-        'x-api-user': Settings.uuid2,  
-        'x-api-key': Settings.key2,  
+        'x-api-user': Settings.option('uuid'),  
+        'x-api-key': Settings.option('key'),  
         }
   },
   function(data) {
             // Success!
     console.log('Successfully fetched HABIT data!');
           
-            var habits = [];
+   // icard.hide();  
+    var habits = [];
            // var daily = '';
             var daily = [];
             var todo = [];
           
-            
-            
-            for ( var x = 0; x < data.length; x++ ) {
+    
+    var user = [];
+    
+    console.log(data.stats.hp);
+                  
+                user.push({
+                  title: "Level: " + data.stats.lvl,
+                    subtitle: data.stats.class,
+                    id: 999
+                  });    
+ 
+    
+               
+    
+                  user.push({
+                    title: "HP",
+                    subtitle: data.stats.hp  + " / " + data.stats.maxHealth,
+                    id: 999
+                  });
+    
+                 user.push({
+                    title: "XP",
+                    subtitle: data.stats.exp + " / " + ( data.stats.exp + data.stats.toNextLevel ),
+                    id: 999
+                  });
+    
+                  user.push({
+                    title: "MP",
+                    subtitle: data.stats.mp + " / " + data.stats.maxMP,
+                    id: 999
+                  });    
+    
+       user.push({
+                    title: "GP",
+                    subtitle: data.stats.gp,
+                    id: 999
+                  });
+    
+    
+    
+
               
-          
-              
-              
-              if (data[x].type == 'habit') 
+    for ( var x = 0; x < data.habits.length; x++ ) {
+              if (data.habits[x].type == 'habit') 
              { 
                   habits.push({
-                    title: data[x].text.replace(/:.*:/, ''),
-                    subtitle: data[x].notes.replace(/:.*:/, ''),
-                    id: data[x].id
+                    title: data.habits[x].text.replace(/:.*:/, ''),
+                    subtitle: data.habits[x].notes.replace(/:.*:/, ''),
+                    id: data.habits[x].id
                   });
               }
-              
-              
-              
-              if (data[x].type == 'daily') {//&& data[x].completed == 'false') {
+    }
+    
+    
+    
+        for (x = 0; x < data.todos.length; x++ ) {
+              if (data.todos[x].type == 'todo???') 
+             { 
+                  habits.push({
+                    title: data.todo[x].text.replace(/:.*:/, ''),
+                    subtitle: data.todo[x].notes.replace(/:.*:/, ''),
+                    id: data.todo[x].id
+                  });
+              }
+    }
+    
+    
+    
+     for (x = 0; x < data.dailys.length; x++ ) {
+                  if (data.dailys[x].type == 'daily') {//&& data[x].completed == 'false') {
                 
-                  if (data[x].completed === false) {
+                  if (data.dailys[x].completed === false) {
                     
                   daily.push({
-                    title: data[x].text.replace(/:.*:/, ''),
-                    subtitle: data[x].notes.replace(/:.*:/, ''),
-                    id: data[x].id
+                    title: data.dailys[x].text.replace(/:.*:/, ''),
+                    subtitle: data.dailys[x].notes.replace(/:.*:/, ''),
+                    id: data.dailys[x].id
                   });
                     
                   } else {
                     
                   daily.push({
-                    title: 'DONE(' + data[x].text.replace(/:.*:/, '') + ')',
-                    subtitle: data[x].notes.replace(/:.*:/, ''),
-                    id: data[x].id
+                    title: 'DONE(' + data.dailys[x].text.replace(/:.*:/, '') + ')',
+                    subtitle: data.dailys[x].notes.replace(/:.*:/, ''),
+                    id: data.dailys[x].id
                   });
                     
                   }
               }
-              
-              
-              
-              if (data[x].type == 'todos' && data[x].completed === false ) {
-                  todo.push({
-                    title: data[x].text.replace(/:.*:/, ''),
-                    subtitle: data[x].notes.replace(/:.*:/, ''),
-                    id: data[x].id
-                  });
-              }
-              
-              
-            }
-          
-        
+     }
+
+    
         //var topItems = [];
         //    topItems.push({title: 'Habits', subtitle: '', object: habits});
         //    topItems.push({title: 'Dailies', subtitle: '', object: daily});
         //    topItems.push({title: 'Todos', subtitle: '', object: todo});
             
         var topMenu = new UI.Menu({
-          sections: [{
-            title: 'Habits',
-            items: habits
-          },
+          sections: [
+          {
+            title: 'User',
+            items: user
+          },            
           {
             title: 'Dailies',
             items: daily
+          },          
+
+          {
+            title: 'Habits',
+            items: habits
           },
           {
             title: 'ToDos',
@@ -215,9 +273,15 @@ ajax(
           }]
         });    
         
-        topMenu.show();
-         icard.hide();
-        
+topMenu.show();
+icard.hide();
+
+    
+        topMenu.on('click', 'back', function(){
+            icard.show();
+            topMenu.hide();
+          });
+    
             
         topMenu.on('select', function(e) {
           console.log(e.item.title + ' - ' + e.item.id);
@@ -233,6 +297,11 @@ ajax(
           habitCard.show();
           topMenu.hide();
           
+          habitCard.on('click', 'back', function(){
+            topMenu.show();
+            habitCard.hide();
+          });
+          
 
                     habitCard.on('click', 'down', function() {
             console.log('up pressed');
@@ -244,8 +313,8 @@ ajax(
                 type: 'json',
                 method: 'POST',
                         headers:{
-                          'x-api-user': Settings.uuid2,  
-                          'x-api-key': Settings.key2,  
+        'x-api-user': Settings.option('uuid'),  
+        'x-api-key': Settings.option('key'),  
                     }
               },
               function(data) {
@@ -272,8 +341,8 @@ ajax(
                 type: 'json',
                 method: 'POST',
                         headers:{
-        'x-api-user': options.uuid2,  
-        'x-api-key': options.key2,  
+        'x-api-user': Settings.option('uuid'),  
+        'x-api-key': Settings.option('key'),  
                     }
               },
               function(data) {
