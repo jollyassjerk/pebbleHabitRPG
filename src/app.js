@@ -46,12 +46,11 @@ Pebble.addEventListener("ready",
 //
 Pebble.addEventListener("showConfiguration",
 	function() {
-    var config = "http://www.seanisfat.info/pebbleHabitRPG.html";
+    var config = "https://gist.githack.com/yoshimov/9dc26302ac8d3863cd62/raw/d5ade036e3435c98294be68adff018c8416081fa/pebble-habitrpg.html";
 		//var settings = encodeURIComponent(localStorage.getItem("settings"));
     scard.subtitle('Changing Settings');
     console.log("Opening Config: " + config);
 		Pebble.openURL(config);
-
 	}
 );
 
@@ -369,5 +368,3 @@ icard.hide();
     console.log('Failed fetching habit data: ' + error);
   }
 );
-  
-
