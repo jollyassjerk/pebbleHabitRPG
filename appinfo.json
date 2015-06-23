@@ -3,8 +3,8 @@
     "capabilities": [
         "configurable"
     ],
-    "companyName": "Pebble",
-    "longName": "HabitRPG",
+    "companyName": "nomura@pobox.com",
+    "longName": "pebble-habitrpg",
     "projectType": "pebblejs",
     "resources": {
         "media": [
@@ -31,8 +31,9 @@
             }
         ]
     },
-    "shortName": "HabitRPG",
-    "uuid": "4d3a046a-7c71-45da-a136-fb905394bd7a",
+    "sdkVersion": "3",
+    "shortName": "pebble-habitrpg",
+    "uuid": "4ad9a4eb-7248-480d-8c89-4d4c85437a3d",
     "versionCode": 1,
     "versionLabel": "1.0",
     "watchapp": {
